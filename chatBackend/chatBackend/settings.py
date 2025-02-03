@@ -22,6 +22,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",  # Trust your frontend's origin for CSRF
+    "https://7a89-2409-40d2-10bb-ae65-3c4e-863-144f-b49c.ngrok-free.app",
 ]
 CORS_ALLOW_ALL_ORIGINS = True
 

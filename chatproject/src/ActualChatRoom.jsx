@@ -12,7 +12,7 @@ const ActualChatRoom = ({ roomId, username }) => {
       return;
     }
 
-    chatSocketRef.current = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${roomId}/`);
+    chatSocketRef.current = new WebSocket(`wss://127.0.0.1:8000/ws/chat/${roomId}/`);
 
     chatSocketRef.current.onopen = () => {
       console.log("WebSocket connected.");

@@ -1,3 +1,4 @@
+/* Root container - Center content and make responsive */
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -5,15 +6,17 @@
   text-align: center;
 }
 
+/* Logo Effects */
 .logo {
   height: 6em;
   padding: 1.5em;
-  will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
@@ -33,27 +36,22 @@
   }
 }
 
-.card {
-  padding: 2em;
-}
+/* ---- ChatRoom Styling ---- */
 
-.read-the-docs {
-  color: #888;
-}
-
-/* ChatRoom.css */
-
-/* Basic layout and centering */
+/* Main container - Centering & Background */
 .container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   background-color: #f4f4f4;
+  padding: 20px;
 }
 
+/* Chat Room Box */
 .card {
-  width: 400px;
+  width: 100%;
+  max-width: 450px;
   background-color: white;
   padding: 20px;
   border-radius: 10px;
@@ -61,26 +59,31 @@
   text-align: center;
 }
 
+/* Title */
 .title {
   font-size: 24px;
   color: #333;
 }
 
+/* Buttons Layout */
 .button-group {
   display: flex;
   justify-content: space-between;
   margin-bottom: 20px;
 }
 
+/* Button Styling */
 .button {
-  padding: 10px;
-  width: 45%;
+  padding: 12px;
+  width: 48%;
   border-radius: 5px;
   border: none;
   font-size: 16px;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
+/* Different Button Colors */
 .button-create {
   background-color: #4CAF50;
   color: white;
@@ -95,6 +98,7 @@
   opacity: 0.8;
 }
 
+/* Form Section */
 .form-section {
   margin-top: 20px;
 }
@@ -104,22 +108,26 @@
   margin-bottom: 10px;
 }
 
+/* Input Fields */
 .input {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   margin: 10px 0;
   border: 1px solid #ccc;
   border-radius: 5px;
+  font-size: 16px;
 }
 
+/* Submit Button */
 .button-submit {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   background-color: #007bff;
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .button-submit:hover {
@@ -130,3 +138,56 @@
   background-color: #4CAF50;
 }
 
+/* ---- Responsive Design ---- */
+@media (max-width: 768px) {
+  /* Adjust container for small screens */
+  .container {
+    padding: 10px;
+  }
+
+  /* Chat Card should take more width on mobile */
+  .card {
+    width: 100%;
+    max-width: 100%;
+    padding: 15px;
+  }
+
+  /* Adjust Buttons for mobile */
+  .button {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  /* Reduce padding */
+  .input {
+    padding: 10px;
+  }
+
+  .button-submit {
+    padding: 10px;
+  }
+}
+
+/* ---- Dark Mode Support (Optional) ---- */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #222;
+    color: white;
+  }
+  .card {
+    background-color: #333;
+    color: white;
+  }
+  .button {
+    color: white;
+  }
+  .input {
+    background-color: #444;
+    color: white;
+    border: 1px solid #666;
+  }
+}

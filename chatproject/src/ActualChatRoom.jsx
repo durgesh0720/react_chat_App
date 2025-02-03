@@ -12,7 +12,7 @@ const ActualChatRoom = ({ roomId, username }) => {
       return;
     }
 
-    chatSocketRef.current = new WebSocket(`wss://chatproject-mv3jg7rkm-durgesh0720s-projects.vercel.app//ws/chat/${roomId}/`);
+    chatSocketRef.current = new WebSocket(`wss://7a89-2409-40d2-10bb-ae65-3c4e-863-144f-b49c.ngrok-free.app//ws/chat/${roomId}/`);
 
     chatSocketRef.current.onopen = () => {
       console.log("WebSocket connected.");

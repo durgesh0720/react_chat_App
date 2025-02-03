@@ -21,7 +21,7 @@ const ChatRoom = () => {
 
     const creatingRoom = (e) => {
         e.preventDefault();
-        fetch("http://127.0.0.1:8000/create-room/", {
+        fetch("https://7a89-2409-40d2-10bb-ae65-3c4e-863-144f-b49c.ngrok-free.app/create-room/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username }),
@@ -40,7 +40,7 @@ const ChatRoom = () => {
 
     const joiningRoom = (e) => {
         e.preventDefault();
-        fetch("http://127.0.0.1:8000/join-room/", {
+        fetch("https://7a89-2409-40d2-10bb-ae65-3c4e-863-144f-b49c.ngrok-free.app/join-room/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, roomid: roomId }),

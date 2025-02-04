@@ -4,6 +4,7 @@ from asgiref.sync import sync_to_async
 import time
 
 
+username={}
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -11,7 +12,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_id = self.scope['url_route']['kwargs']['room_id']
         self.groupName=f"chatroom_{self.room_id}"
         await self.channel_layer.group_add(f"{self.groupName}", self.channel_name)
-
+        
         # Accept the WebSocket connection (important!)
         await self.accept()
 
@@ -19,6 +20,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
     # Remove the channel from the correct room group
+        print(f"Discennected user: {username['username']}\n Room id: {username['roomId']}")
         await self.channel_layer.group_discard(self.groupName, self.channel_name)
 
 
@@ -29,7 +31,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message_data = json.loads(text_data)
         username = message_data['username']
         text = message_data['text']
-
+        username['username']=username
+        username['roomId']=self.room_id
         # Create a new message in the database with the timestamp
         # message = await self.create_message(username, text)
         # Send the newly created message (including the timestamp) to all clients in the group

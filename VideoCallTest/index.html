@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jitsi Video Chat</title>
+    <script src="https://meet.jit.si/external_api.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #meet { width: 100%; height: 600px; }
+        button { padding: 10px 15px; font-size: 16px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h2>Jitsi Meet Video Chat</h2>
+    <button onclick="startMeeting()">Start Meeting</button>
+    <button onclick="endMeeting()">End Meeting</button>
+    <div id="meet"></div>
+
+    <script>
+        let api = null;
+        const roomId=Math.random().toString(36).substr(2, 5);
+        const options = {
+            roomName: roomId,
+            width: "100%",
+            height: 600,
+            parentNode: document.getElementById("meet"),
+            configOverwrite: {
+                startWithAudioMuted: true,
+                startWithVideoMuted: false,
+                disableInviteFunctions: false // Disables "invite others" option
+            },
+            interfaceConfigOverwrite: {
+                SHOW_JITSI_WATERMARK: false, // Hides Jitsi watermark
+                SHOW_BRAND_WATERMARK: false
+            },
+            userInfo: {
+                displayName: "Custom User"
+            }
+        };
+
+
+        function startMeeting() {
+            const domain = "meet.jit.si";
+            const options = {
+                roomName: roomId,
+                width: "100%",
+                height: 600,
+                parentNode: document.getElementById("meet"),
+                userInfo: {
+                    displayName: "Guest User"
+                }
+            };
+            api = new JitsiMeetExternalAPI(domain, options);
+        }
+
+        function endMeeting() {
+            if (api) {
+                api.dispose(); // Ends the meeting
+            }
+        }
+        api.addEventListener('participantLeft', function(data) {
+            console.log("User Left:", data);
+        });
+
+    </script>
+</body>
+</html>

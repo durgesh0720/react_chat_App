@@ -33,7 +33,7 @@
                 configOverwrite: {
                     startWithAudioMuted: true, // Mute audio on start
                     startWithVideoMuted: false, // Video ON
-                    disableInviteFunctions: false, // Disable "Invite" button
+                    disableInviteFunctions: true, // Disable invite feature
                     prejoinPageEnabled: false, // Skip the prejoin page
                     enableWelcomePage: false, // Remove welcome page
                     enableClosePage: false // Prevent redirect after meeting ends
@@ -44,8 +44,9 @@
                     SHOW_WATERMARK_FOR_GUESTS: false,
                     SHOW_CHROME_EXTENSION_BANNER: false,
                     TOOLBAR_BUTTONS: [ "microphone", "camera", "hangup" ], // Only Mic, Camera, and Hangup
-                    HIDE_INVITE_MORE_HEADER: true, // Hide Invite Button
-                    MOBILE_APP_PROMO: false // Disable mobile app suggestion
+                    HIDE_INVITE_MORE_HEADER: true, // Hide Invite Header
+                    MOBILE_APP_PROMO: false, // Disable mobile app suggestion
+                    INVITE_OPTIONS: [] // Ensure no invite options
                 },
                 userInfo: {
                     displayName: "Guest User"

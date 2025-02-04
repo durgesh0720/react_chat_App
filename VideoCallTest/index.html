@@ -44,14 +44,7 @@
             font-weight: bold;
             color: #333;
         }
-        /* Loading animation */
-        #loading {
-            display: none;
-            font-size: 18px;
-            font-weight: bold;
-            color: #ff6600;
-            margin-top: 10px;
-        }
+
         /* Responsive for mobile */
         @media (max-width: 600px) {
             #meet {
@@ -68,10 +61,9 @@
     <div id="container">
         <h2>Jitsi Video Chat</h2>
         <p>Room ID: <span id="roomID"></span></p>
-        <button id="startBtn" onclick="startMeeting()">Start Meeting</button>
+        <button onclick="startMeeting()">Start Meeting</button>
         <button onclick="inviteUser()">Invite</button>
         <button onclick="endMeeting()" style="background-color: red;">End Meeting</button>
-        <p id="loading">Starting meeting... Please wait.</p> <!-- Loading Text -->
         <div id="meet"></div>
     </div>
 
@@ -81,9 +73,6 @@
         document.getElementById("roomID").innerText = roomName; // Show Room ID
 
         function startMeeting() {
-            document.getElementById("startBtn").disabled = true; // Disable button
-            document.getElementById("loading").style.display = "block"; // Show loading
-
             const domain = "meet.jit.si";
             const options = {
                 roomName: roomName,
@@ -108,19 +97,7 @@
                     displayName: "Guest User"
                 }
             };
-            
             api = new JitsiMeetExternalAPI(domain, options);
-
-            // When Jitsi is ready, hide loading
-            api.addEventListener("videoConferenceJoined", () => {
-                document.getElementById("loading").style.display = "none"; // Hide loading
-                document.getElementById("startBtn").disabled = false; // Enable button
-            });
-
-            // If meeting fails, re-enable button
-            api.addEventListener("videoConferenceLeft", () => {
-                document.getElementById("startBtn").disabled = false;
-            });
         }
 
         function inviteUser() {
@@ -133,8 +110,6 @@
         function endMeeting() {
             if (api) {
                 api.dispose(); // Ends the meeting
-                document.getElementById("loading").style.display = "none"; // Hide loading in case
-                document.getElementById("startBtn").disabled = false; // Re-enable button
             }
         }
     </script>

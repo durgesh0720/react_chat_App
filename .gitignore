@@ -1,68 +1,26 @@
-# =============== General ===============
-.DS_Store
-Thumbs.db
-node_modules/
-dist/
-.env
-.env.local
-*.pyc
-__pycache__/
+# Logs
+logs
 *.log
-*.sqlite3
-
-# =============== Python / Django ===============
-*.pyc
-__pycache__/
-db.sqlite3
-*.sqlite3
-*.log
-venv/
-.env
-.envrc
-config/settings/local.py
-media/
-staticfiles/
-migrations/
-
-# Ignore compiled code
-*.so
-*.egg
-*.egg-info/
-.installed.cfg
-
-# Django debug logs
-debug.log
-
-# Django secret key (if stored separately)
-secrets.json
-
-# =============== React (Vite) ===============
-node_modules/
-dist/
-.vite/
-.vitepress/cache
-.eslintcache
-.cache/
-*.local
-*.env.development
-*.env.production
-*.env.test
-
-# Build files
-build/
-out/
-
-# =============== JetBrains / VS Code (Editor) ===============
-.idea/
-.vscode/
-*.sublime-project
-*.sublime-workspace
-
-# Ignore npm debug files
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Ignore MacOS system files
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
 .vercel

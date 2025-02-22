@@ -20,11 +20,12 @@ const VideoCall = () => {
 
   useEffect(() => {
     if (inRoom) {
-      ws.current = new WebSocket(`wss://jarvis-compiler.onrender.com/ws/video/${roomId}/`);
+      ws.current = new WebSocket(`ws://127.0.0.1:8000/ws/video/${roomId}/`);
 
       ws.current.onopen = () => console.log("WebSocket connected.");
       ws.current.onmessage = async (event) => {
         const data = JSON.parse(event.data);
+        console.log("WebSocket Message:", data);
         if (data.type === "offer") await handleOffer(data.offer);
         else if (data.type === "answer") await handleAnswer(data.answer);
         else if (data.type === "candidate") await handleCandidate(data.candidate);
@@ -41,6 +42,7 @@ const VideoCall = () => {
   const setupPeerConnection = async () => {
     peerConnection.current = new RTCPeerConnection({
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      
     });
 
     try {
@@ -52,6 +54,8 @@ const VideoCall = () => {
 
       peerConnection.current.onicecandidate = (event) => {
         if (event.candidate) sendMessage({ type: "candidate", candidate: event.candidate });
+        console.log(peerConnection.current.connectionState);
+        console.log(peerConnection.current.signalingState);        
       };
 
       peerConnection.current.ontrack = (event) => {
@@ -116,7 +120,7 @@ const VideoCall = () => {
 
   const generateRoomId = async () => {
     try {
-      const response = await axios.post("https://jarvis-compiler.onrender.com/api/create-room/");
+      const response = await axios.post("http://127.0.0.1:8000/api/create-room/");
       setRoomId(response.data.room_id);
     } catch (error) {
       console.error("Error creating room:", error);
@@ -126,7 +130,7 @@ const VideoCall = () => {
   const handleJoinRoom = async () => {
     if (roomId.trim().length >= 5) {
       try {
-        await axios.post("https://jarvis-compiler.onrender.com/api/join-room/", { room_id: roomId });
+        await axios.post("http://127.0.0.1:8000/api/join-room/", { room_id: roomId });
         setInRoom(true);
       } catch (error) {
         console.error("Error joining room:", error);

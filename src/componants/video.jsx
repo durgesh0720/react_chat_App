@@ -33,7 +33,10 @@ const VideoCall = () => {
         ws.current.onopen = () => {
           console.log("WebSocket connected.");
           ws.current.send(JSON.stringify({ type: "test", message: "Hello" }));
-          setupPeerConnection(); // 🛠 FIX: Recreate WebRTC connection on reconnect
+          
+          if (!peerConnection.current) {  // Only create if not already initialized
+            setupPeerConnection();
+          }
         };
         
         ws.current.onmessage = async (event) => {
@@ -63,50 +66,49 @@ const VideoCall = () => {
   }, [inRoom]);
   
   const setupPeerConnection = async () => {
-      if (peerConnection.current) {
-        peerConnection.current.close();
-      }
-    
-      const configuration = {
-        iceServers: [
-          { urls: "stun:stun.l.google.com:19302" },
-          { urls: "stun:stun1.l.google.com:19302" },
-          { urls: "stun:global.stun.twilio.com:3478" },
-          {
-            urls: "turn:relay1.expressturn.com:3478",
-            username: "efc6e2c8",
-            credential: "JjGvKPd9Pqth8XYe"
-          }
-        ]
-      };
-    
-      peerConnection.current = new RTCPeerConnection(configuration);
-    
-      try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-
-          if (localVideoRef.current) {
-            localVideoRef.current.srcObject = stream;
-          }
-      
-          stream.getTracks().forEach(track => peerConnection.current.addTrack(track, stream));
-      
-          peerConnection.current.onicecandidate = (event) => {
-            if (event.candidate) sendMessage({ type: "candidate", candidate: event.candidate });
-          };
-      
-          peerConnection.current.ontrack = (event) => {
-            if (remoteVideoRef.current && !remoteVideoRef.current.srcObject) {
-              remoteVideoRef.current.srcObject = event.streams[0];
-            }
-          };
-        } catch (error) {
-          console.error("Error accessing media devices:", error);
+    if (peerConnection.current) {
+      peerConnection.current.getSenders().forEach(sender => peerConnection.current.removeTrack(sender));
+      peerConnection.current.close();
+    }
+  
+    const configuration = {
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:global.stun.twilio.com:3478" },
+        {
+          urls: "turn:relay1.expressturn.com:3478",
+          username: "efc6e2c8",
+          credential: "JjGvKPd9Pqth8XYe"
         }
-        
+      ]
     };
   
+    peerConnection.current = new RTCPeerConnection(configuration);
   
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+  
+      // Add tracks once
+      stream.getTracks().forEach(track => peerConnection.current.addTrack(track, stream));
+  
+      peerConnection.current.onicecandidate = (event) => {
+        if (event.candidate) sendMessage({ type: "candidate", candidate: event.candidate });
+      };
+  
+      peerConnection.current.ontrack = (event) => {
+        if (remoteVideoRef.current && !remoteVideoRef.current.srcObject) {
+          remoteVideoRef.current.srcObject = event.streams[0];
+        }
+      };
+    } catch (error) {
+      console.error("Error accessing media devices:", error);
+    }
+  };
 
     const sendMessage = (message) => {
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {

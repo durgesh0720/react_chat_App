@@ -71,7 +71,7 @@ const VideoCall = () => {
       peerConnection.current.close();
     }
   
-    const configuration = {
+    peerConnection.current = new RTCPeerConnection({
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
@@ -82,9 +82,7 @@ const VideoCall = () => {
           credential: "JjGvKPd9Pqth8XYe"
         }
       ]
-    };
-  
-    peerConnection.current = new RTCPeerConnection(configuration);
+    });
   
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -93,22 +91,30 @@ const VideoCall = () => {
         localVideoRef.current.srcObject = stream;
       }
   
-      // Add tracks once
-      stream.getTracks().forEach(track => peerConnection.current.addTrack(track, stream));
+      // ✅ Ensure we are not adding tracks multiple times
+      if (peerConnection.current.getSenders().length === 0) {
+        stream.getTracks().forEach(track => peerConnection.current.addTrack(track, stream));
+      }
   
       peerConnection.current.onicecandidate = (event) => {
         if (event.candidate) sendMessage({ type: "candidate", candidate: event.candidate });
       };
   
       peerConnection.current.ontrack = (event) => {
-        if (remoteVideoRef.current && !remoteVideoRef.current.srcObject) {
-          remoteVideoRef.current.srcObject = event.streams[0];
+        console.log("🔹 Remote track received:", event.streams[0]);
+  
+        if (remoteVideoRef.current) {
+          if (!remoteVideoRef.current.srcObject || remoteVideoRef.current.srcObject.id !== event.streams[0].id) {
+            remoteVideoRef.current.srcObject = event.streams[0];
+          }
         }
       };
+  
     } catch (error) {
-      console.error("Error accessing media devices:", error);
+      console.error("🚨 Error accessing media devices:", error);
     }
   };
+  
 
     const sendMessage = (message) => {
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -118,27 +124,42 @@ const VideoCall = () => {
 
     const handleOffer = async (offer) => {
       if (!peerConnection.current) {
-        setupPeerConnection(); // Create a new connection if missing
+        await setupPeerConnection();
       }
-    
+      
       await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await peerConnection.current.createAnswer();
       await peerConnection.current.setLocalDescription(answer);
       sendMessage({ type: "answer", answer });
+      processPendingCandidates()
     };
-  
+    
     const handleAnswer = async (answer) => {
-      if (peerConnection.current) {
-        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+      if (!peerConnection.current) {
+        await setupPeerConnection();
       }
+      
+      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+      processPendingCandidates()
+      
     };
+
+    const pendingCandidates = [];
 
     const handleCandidate = async (candidate) => {
       if (peerConnection.current.remoteDescription) {
         await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+      } else {
+        console.log("🔹 Storing ICE candidate until remoteDescription is set.");
+        pendingCandidates.push(candidate);
       }
     };
-
+    const processPendingCandidates = () => {
+      while (pendingCandidates.length > 0) {
+        const candidate = pendingCandidates.shift();
+        peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    };
     const toggleMute = () => {
       if (!peerConnection.current) return;
       const audioTrack = peerConnection.current.getSenders().find((s) => s.track.kind === "audio");

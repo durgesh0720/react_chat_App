@@ -126,6 +126,11 @@ const VideoCall = () => {
   };
 
   const handleOffer = async (offer) => {
+    if (peerConnection.current) {
+      peerConnection.current.close();  // Close the old connection
+      setupPeerConnection();  // Recreate the PeerConnection
+    }
+  
     await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
     const answer = await peerConnection.current.createAnswer();
     await peerConnection.current.setLocalDescription(answer);

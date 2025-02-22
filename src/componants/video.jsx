@@ -19,78 +19,101 @@ const VideoCall = () => {
   }, [darkMode]);
 
   useEffect(() => {
-    if (inRoom) {
-      ws.current = new WebSocket(`wss://jarvis-compiler.onrender.com/ws/video/${roomId}/`);
-
-      ws.current.onopen = () => {
-        console.log("WebSocket connected.");
-        ws.current.send(JSON.stringify({ type: "test", message: "Hello" }));
-      };
-      
-      ws.current.onmessage = async (event) => {
-        const data = JSON.parse(event.data);
-        console.log("WebSocket Message:", data);
-        if (data.type === "offer") await handleOffer(data.offer);
-        else if (data.type === "answer") await handleAnswer(data.answer);
-        else if (data.type === "candidate") await handleCandidate(data.candidate);
-      };
-      ws.current.onerror = (error) => console.error("WebSocket error:", error);
-      ws.current.onclose = () => console.log("WebSocket closed.");
-
-      setupPeerConnection();
+    const storedRoomId = localStorage.getItem("roomId");
+    if (storedRoomId) {
+      setRoomId(storedRoomId);
+      setInRoom(true);
     }
-
+  }, []);
+  useEffect(() => {
+    if (inRoom) {
+      const connectWebSocket = () => {
+        ws.current = new WebSocket(`wss://jarvis-compiler.onrender.com/ws/video/${roomId}/`);
+  
+        ws.current.onopen = () => {
+          console.log("WebSocket connected.");
+          ws.current.send(JSON.stringify({ type: "test", message: "Hello" }));
+          setupPeerConnection(); // 🛠 FIX: Recreate WebRTC connection on reconnect
+        };
+        
+        ws.current.onmessage = async (event) => {
+          const data = JSON.parse(event.data);
+          console.log("WebSocket Message:", data);
+          if (data.type === "offer") await handleOffer(data.offer);
+          else if (data.type === "answer") await handleAnswer(data.answer);
+          else if (data.type === "candidate") await handleCandidate(data.candidate);
+        };
+  
+        ws.current.onerror = (error) => {
+          console.error("WebSocket error:", error);
+        };
+  
+        ws.current.onclose = () => {
+          console.log("WebSocket closed. Reconnecting...");
+          setTimeout(connectWebSocket, 2000); // Reconnect after 2 seconds
+        };
+      };
+      if (inRoom) {
+        setupPeerConnection(); // 🛠 FIX: Ensure WebRTC starts
+      }
+      connectWebSocket();
+    }
+  
     return () => ws.current && ws.current.close();
   }, [inRoom]);
-
-
+  
   const setupPeerConnection = async () => {
+    if (peerConnection.current) {
+      peerConnection.current.close(); // Close old connection
+    }
+  
     const configuration = {
       iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },  // Free Google STUN
+        { urls: "stun:stun.l.google.com:19302" }, 
         { urls: "stun:stun1.l.google.com:19302" },
-        { urls: "stun:global.stun.twilio.com:3478" },  // Twilio STUN
+        { urls: "stun:global.stun.twilio.com:3478" },
         {
-          urls: "turn:relay1.expressturn.com:3478",  // Free TURN server
+          urls: "turn:relay1.expressturn.com:3478",
           username: "efc6e2c8",
           credential: "JjGvKPd9Pqth8XYe"
         }
       ]
     };
+  
     peerConnection.current = new RTCPeerConnection(configuration);
-
+  
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-
+  
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+  
       stream.getTracks().forEach((track) => peerConnection.current.addTrack(track, stream));
-
+  
       peerConnection.current.onicecandidate = (event) => {
-        if (event.candidate) 
-          sendMessage({ type: "candidate", candidate: event.candidate });
+        if (event.candidate) sendMessage({ type: "candidate", candidate: event.candidate });
       };
-
+  
       peerConnection.current.ontrack = (event) => {
         if (remoteVideoRef.current) {
-          if (!remoteVideoRef.current.srcObject) {
-            remoteVideoRef.current.srcObject = event.streams[0];
-          }
-          remoteVideoRef.current.onloadedmetadata = () => {
-            remoteVideoRef.current.play().catch((error) => console.error("Video play error:", error));
-          };
+          remoteVideoRef.current.srcObject = event.streams[0];
+          remoteVideoRef.current.play().catch((error) => console.error("Video play error:", error));
         }
       };
-
+      
       peerConnection.current.onnegotiationneeded = async () => {
-        const offer = await peerConnection.current.createOffer();
-        await peerConnection.current.setLocalDescription(offer);
-        sendMessage({ type: "offer", offer });
-      };
+        if (peerConnection.current.signalingState === "stable") {
+          const offer = await peerConnection.current.createOffer();
+          await peerConnection.current.setLocalDescription(offer);
+          sendMessage({ type: "offer", offer }); // 🛠 FIX: Ensure reconnection
+        }
+      };      
     } catch (error) {
       console.error("Error accessing media devices:", error);
     }
   };
+  
 
   const sendMessage = (message) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -139,16 +162,17 @@ const VideoCall = () => {
     try {
       const response = await axios.post("https://jarvis-compiler.onrender.com/api/create-room/");
       setRoomId(response.data.room_id);
+      localStorage.setItem("roomId", response.data.room_id); // Save Room ID
     } catch (error) {
       console.error("Error creating room:", error);
     }
   };
-
   const handleJoinRoom = async () => {
     if (roomId.trim().length >= 5) {
       try {
         await axios.post("https://jarvis-compiler.onrender.com/api/join-room/", { room_id: roomId });
         setInRoom(true);
+        localStorage.setItem("roomId", roomId); // Save Room ID
       } catch (error) {
         console.error("Error joining room:", error);
       }

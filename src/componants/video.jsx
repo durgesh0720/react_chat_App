@@ -22,7 +22,11 @@ const VideoCall = () => {
     if (inRoom) {
       ws.current = new WebSocket(`wss://jarvis-compiler.onrender.com/ws/video/${roomId}/`);
 
-      ws.current.onopen = () => console.log("WebSocket connected.");
+      ws.current.onopen = () => {
+        console.log("WebSocket connected.");
+        ws.current.send(JSON.stringify({ type: "test", message: "Hello" }));
+      };
+      
       ws.current.onmessage = async (event) => {
         const data = JSON.parse(event.data);
         console.log("WebSocket Message:", data);
@@ -38,7 +42,7 @@ const VideoCall = () => {
 
     return () => ws.current && ws.current.close();
   }, [inRoom]);
-  ws.current.send(JSON.stringify({ type: "test", message: "Hello" }));
+
 
   const setupPeerConnection = async () => {
     const configuration = {
@@ -152,6 +156,7 @@ const VideoCall = () => {
       {inRoom ? (
         <div className="relative w-full max-w-4xl h-[70vh] bg-black rounded-lg overflow-hidden">
           {/* Remote Video (Full Screen) */}
+          <p>{roomId}</p>
           <video ref={remoteVideoRef} className="w-full h-full object-cover" autoPlay playsInline />
           <p className="absolute bottom-2 left-2 text-white bg-black bg-opacity-50 p-1 rounded">Remote</p>
 

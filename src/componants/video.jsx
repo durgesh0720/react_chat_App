@@ -23,11 +23,11 @@ const VideoCall = () => {
       ws.current = new WebSocket(`wss://jarvis-compiler.onrender.com/ws/video/${roomId}/`);
 
       ws.current.onopen = () => console.log("WebSocket connected.");
-      ws.current.onmessage = (event) => {
+      ws.current.onmessage = async (event) => {
         const data = JSON.parse(event.data);
-        if (data.type === "offer") handleOffer(data.offer);
-        else if (data.type === "answer") handleAnswer(data.answer);
-        else if (data.type === "candidate") handleCandidate(data.candidate);
+        if (data.type === "offer") await handleOffer(data.offer);
+        else if (data.type === "answer") await handleAnswer(data.answer);
+        else if (data.type === "candidate") await handleCandidate(data.candidate);
       };
       ws.current.onerror = (error) => console.error("WebSocket error:", error);
       ws.current.onclose = () => console.log("WebSocket closed.");
@@ -55,7 +55,10 @@ const VideoCall = () => {
       };
 
       peerConnection.current.ontrack = (event) => {
-        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0];
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = event.streams[0];
+          remoteVideoRef.current.play();
+        }
       };
 
       peerConnection.current.onnegotiationneeded = async () => {

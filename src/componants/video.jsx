@@ -89,13 +89,7 @@ const VideoCall = () => {
             localVideoRef.current.srcObject = stream;
           }
       
-          // Ensure track order remains the same
-          const audioTrack = stream.getAudioTracks()[0];
-          const videoTrack = stream.getVideoTracks()[0];
           stream.getTracks().forEach(track => peerConnection.current.addTrack(track, stream));
-
-          if (audioTrack) peerConnection.current.addTrack(audioTrack, stream);
-          if (videoTrack) peerConnection.current.addTrack(videoTrack, stream);
       
           peerConnection.current.onicecandidate = (event) => {
             if (event.candidate) sendMessage({ type: "candidate", candidate: event.candidate });

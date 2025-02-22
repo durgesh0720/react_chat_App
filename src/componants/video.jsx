@@ -98,9 +98,13 @@ const VideoCall = () => {
       peerConnection.current.ontrack = (event) => {
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = event.streams[0];
-          remoteVideoRef.current.play().catch((error) => console.error("Video play error:", error));
+          
+          remoteVideoRef.current.addEventListener("loadedmetadata", () => {
+            remoteVideoRef.current.play().catch((error) => console.error("Video play error:", error));
+          });
         }
       };
+      
       
       peerConnection.current.onnegotiationneeded = async () => {
         if (peerConnection.current.signalingState === "stable") {

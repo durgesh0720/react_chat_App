@@ -64,12 +64,12 @@ const VideoCall = () => {
   
   const setupPeerConnection = async () => {
     if (peerConnection.current) {
-      peerConnection.current.close(); // Close old connection
+      peerConnection.current.close(); 
     }
   
     const configuration = {
       iceServers: [
-        { urls: "stun:stun.l.google.com:19302" }, 
+        { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun1.l.google.com:19302" },
         { urls: "stun:global.stun.twilio.com:3478" },
         {
@@ -89,34 +89,27 @@ const VideoCall = () => {
         localVideoRef.current.srcObject = stream;
       }
   
-      stream.getTracks().forEach((track) => peerConnection.current.addTrack(track, stream));
+      // Ensure track order remains the same
+      const audioTrack = stream.getAudioTracks()[0];
+      const videoTrack = stream.getVideoTracks()[0];
+  
+      if (audioTrack) peerConnection.current.addTrack(audioTrack, stream);
+      if (videoTrack) peerConnection.current.addTrack(videoTrack, stream);
   
       peerConnection.current.onicecandidate = (event) => {
         if (event.candidate) sendMessage({ type: "candidate", candidate: event.candidate });
       };
   
       peerConnection.current.ontrack = (event) => {
-        if (remoteVideoRef.current) {
+        if (remoteVideoRef.current && !remoteVideoRef.current.srcObject) {
           remoteVideoRef.current.srcObject = event.streams[0];
-          
-          remoteVideoRef.current.addEventListener("loadedmetadata", () => {
-            remoteVideoRef.current.play().catch((error) => console.error("Video play error:", error));
-          });
         }
       };
-      
-      
-      peerConnection.current.onnegotiationneeded = async () => {
-        if (peerConnection.current.signalingState === "stable") {
-          const offer = await peerConnection.current.createOffer();
-          await peerConnection.current.setLocalDescription(offer);
-          sendMessage({ type: "offer", offer }); // 🛠 FIX: Ensure reconnection
-        }
-      };      
     } catch (error) {
       console.error("Error accessing media devices:", error);
     }
   };
+  
   
 
   const sendMessage = (message) => {

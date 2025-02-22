@@ -20,7 +20,7 @@ const VideoCall = () => {
 
   useEffect(() => {
     if (inRoom) {
-      ws.current = new WebSocket(`ws://localhost:8000/ws/video/${roomId}/`);
+      ws.current = new WebSocket(`wss://jarvis-compiler.onrender.com/ws/video/${roomId}/`);
 
       ws.current.onopen = () => console.log("WebSocket connected.");
       ws.current.onmessage = (event) => {
@@ -113,7 +113,7 @@ const VideoCall = () => {
 
   const generateRoomId = async () => {
     try {
-      const response = await axios.post("http://localhost:8000/api/create-room/");
+      const response = await axios.post("https://jarvis-compiler.onrender.com/api/create-room/");
       setRoomId(response.data.room_id);
     } catch (error) {
       console.error("Error creating room:", error);
@@ -123,7 +123,7 @@ const VideoCall = () => {
   const handleJoinRoom = async () => {
     if (roomId.trim().length >= 5) {
       try {
-        await axios.post("http://localhost:8000/api/join-room/", { room_id: roomId });
+        await axios.post("https://jarvis-compiler.onrender.com/api/join-room/", { room_id: roomId });
         setInRoom(true);
       } catch (error) {
         console.error("Error joining room:", error);

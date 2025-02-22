@@ -18,13 +18,13 @@ const VideoCall = () => {
     document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
-  useEffect(() => {
-    const storedRoomId = localStorage.getItem("roomId");
-    if (storedRoomId) {
-      setRoomId(storedRoomId);
-      setInRoom(true);
-    }
-  }, []);
+    useEffect(() => {
+      const storedRoomId = localStorage.getItem("roomId");
+      if (storedRoomId) {
+        setRoomId(storedRoomId);
+        setInRoom(true);
+      }
+    }, []);
   useEffect(() => {
     if (inRoom) {
       const connectWebSocket = () => {
@@ -63,123 +63,124 @@ const VideoCall = () => {
   }, [inRoom]);
   
   const setupPeerConnection = async () => {
-    if (peerConnection.current) {
-      peerConnection.current.close(); 
-    }
-  
-    const configuration = {
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
-        { urls: "stun:global.stun.twilio.com:3478" },
-        {
-          urls: "turn:relay1.expressturn.com:3478",
-          username: "efc6e2c8",
-          credential: "JjGvKPd9Pqth8XYe"
+      if (peerConnection.current) {
+        peerConnection.current.close();
+      }
+    
+      const configuration = {
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          { urls: "stun:stun1.l.google.com:19302" },
+          { urls: "stun:global.stun.twilio.com:3478" },
+          {
+            urls: "turn:relay1.expressturn.com:3478",
+            username: "efc6e2c8",
+            credential: "JjGvKPd9Pqth8XYe"
+          }
+        ]
+      };
+    
+      peerConnection.current = new RTCPeerConnection(configuration);
+    
+      try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = stream;
+          }
+      
+          // Ensure track order remains the same
+          const audioTrack = stream.getAudioTracks()[0];
+          const videoTrack = stream.getVideoTracks()[0];
+          stream.getTracks().forEach(track => peerConnection.current.addTrack(track, stream));
+
+          if (audioTrack) peerConnection.current.addTrack(audioTrack, stream);
+          if (videoTrack) peerConnection.current.addTrack(videoTrack, stream);
+      
+          peerConnection.current.onicecandidate = (event) => {
+            if (event.candidate) sendMessage({ type: "candidate", candidate: event.candidate });
+          };
+      
+          peerConnection.current.ontrack = (event) => {
+            if (remoteVideoRef.current && !remoteVideoRef.current.srcObject) {
+              remoteVideoRef.current.srcObject = event.streams[0];
+            }
+          };
+        } catch (error) {
+          console.error("Error accessing media devices:", error);
         }
-      ]
+        
     };
   
-    peerConnection.current = new RTCPeerConnection(configuration);
   
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
+
+    const sendMessage = (message) => {
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.send(JSON.stringify(message));
       }
-  
-      // Ensure track order remains the same
-      const audioTrack = stream.getAudioTracks()[0];
-      const videoTrack = stream.getVideoTracks()[0];
-  
-      if (audioTrack) peerConnection.current.addTrack(audioTrack, stream);
-      if (videoTrack) peerConnection.current.addTrack(videoTrack, stream);
-  
-      peerConnection.current.onicecandidate = (event) => {
-        if (event.candidate) sendMessage({ type: "candidate", candidate: event.candidate });
-      };
-  
-      peerConnection.current.ontrack = (event) => {
-        if (remoteVideoRef.current && !remoteVideoRef.current.srcObject) {
-          remoteVideoRef.current.srcObject = event.streams[0];
-        }
-      };
-    } catch (error) {
-      console.error("Error accessing media devices:", error);
-    }
-  };
-  
-  
+    };
 
-  const sendMessage = (message) => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify(message));
-    }
-  };
-
-  const handleOffer = async (offer) => {
-    if (peerConnection.current) {
-      peerConnection.current.close();  // Close the old connection
-      setupPeerConnection();  // Recreate the PeerConnection
-    }
+    const handleOffer = async (offer) => {
+      if (!peerConnection.current) {
+        setupPeerConnection(); // Create a new connection if missing
+      }
+    
+      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await peerConnection.current.createAnswer();
+      await peerConnection.current.setLocalDescription(answer);
+      sendMessage({ type: "answer", answer });
+    };
   
-    await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await peerConnection.current.createAnswer();
-    await peerConnection.current.setLocalDescription(answer);
-    sendMessage({ type: "answer", answer });
-  };
+    const handleAnswer = async (answer) => {
+      if (peerConnection.current) {
+        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+      }
+    };
 
-  const handleAnswer = async (answer) => {
-    if (peerConnection.current.signalingState !== "stable") {
-      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
-    }
-  };
+    const handleCandidate = async (candidate) => {
+      if (peerConnection.current.remoteDescription) {
+        await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    };
 
-  const handleCandidate = async (candidate) => {
-    if (peerConnection.current.remoteDescription) {
-      await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
-    }
-  };
+    const toggleMute = () => {
+      if (!peerConnection.current) return;
+      const audioTrack = peerConnection.current.getSenders().find((s) => s.track.kind === "audio");
+      if (audioTrack) {
+        audioTrack.track.enabled = !isMuted;
+        setIsMuted(!isMuted);
+      }
+    };
 
-  const toggleMute = () => {
-    if (!peerConnection.current) return;
-    const audioTrack = peerConnection.current.getSenders().find((s) => s.track.kind === "audio");
-    if (audioTrack) {
-      audioTrack.track.enabled = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
+    const toggleVideo = () => {
+      if (!peerConnection.current) return;
+      const videoTrack = peerConnection.current.getSenders().find((s) => s.track.kind === "video");
+      if (videoTrack) {
+        videoTrack.track.enabled = !isVideoOff;
+        setIsVideoOff(!isVideoOff);
+      }
+    };
 
-  const toggleVideo = () => {
-    if (!peerConnection.current) return;
-    const videoTrack = peerConnection.current.getSenders().find((s) => s.track.kind === "video");
-    if (videoTrack) {
-      videoTrack.track.enabled = !isVideoOff;
-      setIsVideoOff(!isVideoOff);
-    }
-  };
-
-  const generateRoomId = async () => {
-    try {
-      const response = await axios.post("https://jarvis-compiler.onrender.com/api/create-room/");
-      setRoomId(response.data.room_id);
-      localStorage.setItem("roomId", response.data.room_id); // Save Room ID
-    } catch (error) {
-      console.error("Error creating room:", error);
-    }
-  };
-  const handleJoinRoom = async () => {
-    if (roomId.trim().length >= 5) {
+    const generateRoomId = async () => {
       try {
-        await axios.post("https://jarvis-compiler.onrender.com/api/join-room/", { room_id: roomId });
-        setInRoom(true);
-        localStorage.setItem("roomId", roomId); // Save Room ID
+        const response = await axios.post("https://jarvis-compiler.onrender.com/api/create-room/");
+        setRoomId(response.data.room_id);
+        localStorage.setItem("roomId", response.data.room_id); // Save Room ID
       } catch (error) {
-        console.error("Error joining room:", error);
+        console.error("Error creating room:", error);
       }
-    }
-  };
+    };
+    const handleJoinRoom = async () => {
+      if (roomId.trim().length >= 5) {
+        try {
+          await axios.post("https://jarvis-compiler.onrender.com/api/join-room/", { room_id: roomId });
+          setInRoom(true);
+          localStorage.setItem("roomId", roomId); // Save Room ID
+        } catch (error) {
+          console.error("Error joining room:", error);
+        }
+      }
+    };
 
   return (
     <div className={`min-h-screen flex flex-col items-center p-4 ${darkMode ? "dark bg-gray-900 text-white" : "bg-gray-100"}`}>

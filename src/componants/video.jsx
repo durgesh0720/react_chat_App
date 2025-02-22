@@ -38,12 +38,22 @@ const VideoCall = () => {
 
     return () => ws.current && ws.current.close();
   }, [inRoom]);
+  ws.current.send(JSON.stringify({ type: "test", message: "Hello" }));
 
   const setupPeerConnection = async () => {
-    peerConnection.current = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-      
-    });
+    const configuration = {
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },  // Free Google STUN
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:global.stun.twilio.com:3478" },  // Twilio STUN
+        {
+          urls: "turn:relay1.expressturn.com:3478",  // Free TURN server
+          username: "efc6e2c8",
+          credential: "JjGvKPd9Pqth8XYe"
+        }
+      ]
+    };
+    peerConnection.current = new RTCPeerConnection(configuration);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -53,9 +63,8 @@ const VideoCall = () => {
       stream.getTracks().forEach((track) => peerConnection.current.addTrack(track, stream));
 
       peerConnection.current.onicecandidate = (event) => {
-        if (event.candidate) sendMessage({ type: "candidate", candidate: event.candidate });
-        console.log(peerConnection.current.connectionState);
-        console.log(peerConnection.current.signalingState);        
+        if (event.candidate) 
+          sendMessage({ type: "candidate", candidate: event.candidate });
       };
 
       peerConnection.current.ontrack = (event) => {
